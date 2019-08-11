@@ -1,5 +1,5 @@
 local product_key = KEYS[1]
-local key = KEYS[1] .. "::users"
+local key = KEYS[1] .. ":users"
 
 local exists = redis.call("EXISTS", product_key)
 if exists == 1 then

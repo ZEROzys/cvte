@@ -6,7 +6,7 @@ public class CSVWriter {
 
     public static void main(String[] args) {
         try {
-            FileWriter fw = new FileWriter("D:\\jmeterTests\\user.csv");
+            FileWriter fw = new FileWriter("D:\\user.csv");
             for (int i = 1; i <= 1000; i++) {
                 fw.write(String.format("%d,1\n", i));
             }

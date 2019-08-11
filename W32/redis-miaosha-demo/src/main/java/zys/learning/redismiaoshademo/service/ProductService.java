@@ -7,6 +7,8 @@ import zys.learning.redismiaoshademo.dao.ProductRepository;
 import zys.learning.redismiaoshademo.pojo.Order;
 import zys.learning.redismiaoshademo.pojo.Product;
 
+import java.util.List;
+
 @Service
 public class ProductService {
 
@@ -30,6 +32,10 @@ public class ProductService {
             return true;
         }
         return false;
+    }
+
+    public List<Product> getAll() {
+        return productRepository.getAll();
     }
 
 }

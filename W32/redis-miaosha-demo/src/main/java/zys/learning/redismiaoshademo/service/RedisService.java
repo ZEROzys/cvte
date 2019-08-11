@@ -16,7 +16,7 @@ import java.util.Arrays;
 @Service
 public class RedisService {
 
-    private Logger logger = LoggerFactory.getLogger(RedisService.class);
+//    private Logger logger = LoggerFactory.getLogger(RedisService.class);
 
     @Autowired
     private StringRedisTemplate redisTemplate;

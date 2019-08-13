@@ -18,15 +18,20 @@ public class ProductService {
     @Autowired
     OrderService orderService;
 
+    /***
+     * 保存订单，库存减一，出现错误回滚
+     * @param order
+     * @return
+     * @throws Exception
+     */
     @Transactional(rollbackFor = Exception.class)
-    public boolean updateStock(Long productId, Long userId) throws Exception {
-        Product product = productRepository.getProductById(productId);
+    public boolean save(Order order) throws Exception{
+        Product product = productRepository.getProductById(order.getProductId());
         if (product.getStock() > 0) {
             Product updatedProduct = new Product(product.getId(), product.getStock()-1,
                     product.getProductName(), product.getPrice());
-            productRepository.save(updatedProduct);
-//            while (true) {}
-            Order order = new Order(productId, userId);
+            if (productRepository.save(updatedProduct) == null)
+                throw new Exception("更新库存失败");
             if (orderService.save(order) == null)
                 throw new Exception("订单保存失败");
             return true;
@@ -37,5 +42,10 @@ public class ProductService {
     public List<Product> getAll() {
         return productRepository.getAll();
     }
-
+    public Product getProductById(long id) {
+        return productRepository.getOne(id);
+    }
+    public Product save(Product product) {
+        return productRepository.save(product);
+    }
 }

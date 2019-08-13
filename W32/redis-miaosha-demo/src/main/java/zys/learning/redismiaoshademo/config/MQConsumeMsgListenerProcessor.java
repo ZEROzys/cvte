@@ -7,11 +7,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import zys.learning.redismiaoshademo.pojo.Order;
-import zys.learning.redismiaoshademo.service.OrderService;
+import zys.learning.redismiaoshademo.service.ProductService;
 import zys.learning.redismiaoshademo.service.RedisService;
+import zys.learning.redismiaoshademo.service.WebSocketServer;
 
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 
 @Component
 public class MQConsumeMsgListenerProcessor implements MessageListenerConcurrently {
@@ -22,7 +22,7 @@ public class MQConsumeMsgListenerProcessor implements MessageListenerConcurrentl
     private RedisService redisService;
 
     @Autowired
-    private OrderService orderService;
+    private ProductService productService;
 
     @Override
     public ConsumeConcurrentlyStatus consumeMessage(
@@ -32,10 +32,27 @@ public class MQConsumeMsgListenerProcessor implements MessageListenerConcurrentl
             LOGGER.info("收到来自{}的订单", msg[1]);
             if (redisService.secKill(PRODUCT_PREFIX, msg[1])) {
                 Order order = new Order(Long.valueOf(msg[0]), Long.valueOf(msg[1]));
-                orderService.save(order);
+                //  数据库保存失败
+                try {
+                    if (productService.save(order)) {
+                        WebSocketServer.sendInfo("秒杀成功", msg[1]);
+                        return ConsumeConcurrentlyStatus.CONSUME_SUCCESS;
+                    }
+                    else  {
+                        redisService.rollback(PRODUCT_PREFIX, msg[1]);
+                        return ConsumeConcurrentlyStatus.RECONSUME_LATER;
+                    }
+                } catch (Exception e) {
+                    LOGGER.error("保存数据库错误", e);
+                    if (me.getReconsumeTimes() == 2) {
+                        WebSocketServer.sendInfo("秒杀失败", msg[1]);
+                        return ConsumeConcurrentlyStatus.CONSUME_SUCCESS;
+                    }
+                    return ConsumeConcurrentlyStatus.RECONSUME_LATER;
+                }
             }
+            return ConsumeConcurrentlyStatus.RECONSUME_LATER;
         }
-
         return ConsumeConcurrentlyStatus.CONSUME_SUCCESS;
     }
 }

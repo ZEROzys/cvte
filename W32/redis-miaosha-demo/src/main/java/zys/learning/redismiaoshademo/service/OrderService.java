@@ -8,7 +8,7 @@ import zys.learning.redismiaoshademo.pojo.Order;
 @Service
 public class OrderService {
     @Autowired
-    OrderRepository orderRepository;
+    private OrderRepository orderRepository;
 
     public Order save(Order order) {
         return orderRepository.save(order);

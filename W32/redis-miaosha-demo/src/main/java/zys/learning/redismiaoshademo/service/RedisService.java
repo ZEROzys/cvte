@@ -15,7 +15,6 @@ import zys.learning.redismiaoshademo.common.RedisFix;
 import zys.learning.redismiaoshademo.pojo.Order;
 import zys.learning.redismiaoshademo.pojo.Product;
 
-import javax.validation.constraints.NotNull;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;

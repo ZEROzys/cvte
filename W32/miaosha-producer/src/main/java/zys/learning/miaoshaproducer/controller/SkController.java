@@ -1,5 +1,6 @@
 package zys.learning.miaoshaproducer.controller;
 
+import com.google.common.util.concurrent.RateLimiter;
 import org.apache.rocketmq.client.producer.DefaultMQProducer;
 import org.apache.rocketmq.client.producer.SendCallback;
 import org.apache.rocketmq.client.producer.SendResult;
@@ -17,6 +18,7 @@ import zys.learning.miaoshaproducer.pojo.Product;
 import zys.learning.miaoshaproducer.service.ProductService;
 import zys.learning.miaoshaproducer.service.RedisService;
 
+import java.util.concurrent.Executors;
 import java.util.List;
 
 @RestController
@@ -37,6 +39,8 @@ public class SkController implements InitializingBean {
     @Autowired
     private ProductService productService;
 
+    private RateLimiter rateLimiter = RateLimiter.create(20);
+
     /***
      * 秒杀接口
      * @param username
@@ -45,6 +49,11 @@ public class SkController implements InitializingBean {
      */
     @PostMapping("/seckill")
     public BaseResponse secKill(String username, String productId) {
+        if (!rateLimiter.tryAcquire()) {
+            LOGGER.info("{}被限流了", username);
+            return BaseResponse.PRODUCT_NO_STOCK;
+        }
+        LOGGER.info("{}进来了", username);
         // 前置校验
         // 1. 订单参数校验
         // TODO
@@ -90,18 +99,19 @@ public class SkController implements InitializingBean {
             producer.send(message, new SendCallback() {
                 @Override
                 public void onSuccess(SendResult sendResult) {
-                    LOGGER.info("消息{}发送成功", sendResult.getMsgId());
+                    LOGGER.info("来自{}的请求成功入队", username);
                 }
 
                 @Override
                 public void onException(Throwable e) {
                     e.printStackTrace();
                 }
-            }, 1000);
+            }, 2000);
             return BaseResponse.SCKILL_IN_QUEUE;
         } catch (Exception e) {
             e.printStackTrace();
         }
+
         return BaseResponse.SCKILL_FAILURE;
     }
 

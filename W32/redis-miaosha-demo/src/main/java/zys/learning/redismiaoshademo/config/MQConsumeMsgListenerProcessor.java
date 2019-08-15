@@ -29,12 +29,14 @@ public class MQConsumeMsgListenerProcessor implements MessageListenerConcurrentl
             List<MessageExt> msgs, ConsumeConcurrentlyContext consumeConcurrentlyContext) {
         for (MessageExt me: msgs) {
             String[] msg = new String(me.getBody()).split(",");
-            LOGGER.info("收到来自{}的订单", msg[1]);
             if (redisService.secKill(PRODUCT_PREFIX, msg[1])) {
+
+                //  这里保存到缓存的同时保存在数据库中，也可以先保存在缓存，通过一个定时任务保证缓存数据库的一致性
                 Order order = new Order(Long.valueOf(msg[0]), Long.valueOf(msg[1]));
                 //  数据库保存失败
                 try {
                     if (productService.save(order)) {
+                        LOGGER.info("{}秒杀成功", msg[1]);
                         WebSocketServer.sendInfo("秒杀成功", msg[1]);
                         return ConsumeConcurrentlyStatus.CONSUME_SUCCESS;
                     }
@@ -50,8 +52,12 @@ public class MQConsumeMsgListenerProcessor implements MessageListenerConcurrentl
                     }
                     return ConsumeConcurrentlyStatus.RECONSUME_LATER;
                 }
+
+//                LOGGER.info("{}秒杀成功", msg[1]);
             }
-            return ConsumeConcurrentlyStatus.RECONSUME_LATER;
+            else
+                LOGGER.info("{}秒杀失败", msg[1]);
+            return ConsumeConcurrentlyStatus.CONSUME_SUCCESS;
         }
         return ConsumeConcurrentlyStatus.CONSUME_SUCCESS;
     }

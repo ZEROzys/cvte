@@ -104,7 +104,7 @@ public class SkController implements InitializingBean {
 
                 @Override
                 public void onException(Throwable e) {
-                    e.printStackTrace();
+                    LOGGER.info("来自{}的请求超时", username);
                 }
             }, 2000);
             return BaseResponse.SCKILL_IN_QUEUE;

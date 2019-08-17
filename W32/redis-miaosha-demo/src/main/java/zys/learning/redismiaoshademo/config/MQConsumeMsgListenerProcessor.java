@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import zys.learning.redismiaoshademo.common.RedisFix;
 import zys.learning.redismiaoshademo.pojo.Order;
 import zys.learning.redismiaoshademo.service.ProductService;
 import zys.learning.redismiaoshademo.service.RedisService;
@@ -16,7 +17,6 @@ import java.util.List;
 @Component
 public class MQConsumeMsgListenerProcessor implements MessageListenerConcurrently {
     private static final Logger LOGGER = LoggerFactory.getLogger(MQConsumeMsgListenerProcessor.class);
-    private static final String PRODUCT_PREFIX = "product:1";
 
     @Autowired
     private RedisService redisService;
@@ -29,7 +29,7 @@ public class MQConsumeMsgListenerProcessor implements MessageListenerConcurrentl
             List<MessageExt> msgs, ConsumeConcurrentlyContext consumeConcurrentlyContext) {
         for (MessageExt me: msgs) {
             String[] msg = new String(me.getBody()).split(",");
-            if (redisService.secKill(PRODUCT_PREFIX, msg[1])) {
+            if (redisService.secKill(RedisFix.PRODUCT_PREFIX+msg[0], msg[1])) {
 
                 //  这里保存到缓存的同时保存在数据库中，也可以先保存在缓存，通过一个定时任务保证缓存数据库的一致性
                 Order order = new Order(Long.valueOf(msg[0]), Long.valueOf(msg[1]));
@@ -41,7 +41,7 @@ public class MQConsumeMsgListenerProcessor implements MessageListenerConcurrentl
                         return ConsumeConcurrentlyStatus.CONSUME_SUCCESS;
                     }
                     else  {
-                        redisService.rollback(PRODUCT_PREFIX, msg[1]);
+                        redisService.rollback(RedisFix.PRODUCT_PREFIX+msg[0], msg[1]);
                         return ConsumeConcurrentlyStatus.RECONSUME_LATER;
                     }
                 } catch (Exception e) {

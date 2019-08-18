@@ -9,9 +9,9 @@ public class Order {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
     @Column(name = "pId")
-    Long productId;
+    private Long productId;
     @Column(name = "uId")
-    Long userId;
+    private Long userId;
 
     public Order(Long productId, Long userId) {
         this.productId = productId;

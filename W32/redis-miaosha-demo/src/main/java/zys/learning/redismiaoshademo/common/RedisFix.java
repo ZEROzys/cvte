@@ -3,7 +3,7 @@ package zys.learning.redismiaoshademo.common;
 public class RedisFix {
 
     public static final String PRODUCT_PREFIX = "product:";
-    public static final String PRODUCT_USERS_SUFFIX = ":users";
+//    public static final String PRODUCT_USERS_SUFFIX = ":uId:";
 
     private String redisfix;
 

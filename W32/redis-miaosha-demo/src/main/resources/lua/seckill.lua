@@ -1,5 +1,5 @@
 local product_key = KEYS[1]
-local key = KEYS[1] .. ":users"
+local p_u_key = KEYS[1] .. ":uId:" .. ARGV[1]
 
 local exists = redis.call("EXISTS", product_key)
 if exists == 1 then
@@ -8,7 +8,7 @@ if exists == 1 then
         return tostring(0)
     else
         redis.call("DECR", product_key)
-        redis.call("RPUSH", key, ARGV[1])
+        redis.call("SET", p_u_key, 1)
         return tostring(1)
     end
 end

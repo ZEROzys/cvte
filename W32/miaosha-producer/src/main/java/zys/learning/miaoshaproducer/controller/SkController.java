@@ -13,12 +13,10 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import zys.learning.miaoshaproducer.common.BaseResponse;
+import zys.learning.miaoshaproducer.common.CommonReponse;
 import zys.learning.miaoshaproducer.pojo.Product;
 import zys.learning.miaoshaproducer.service.ProductService;
 import zys.learning.miaoshaproducer.service.RedisService;
-
-import java.util.concurrent.Executors;
 import java.util.List;
 
 @RestController
@@ -27,7 +25,7 @@ public class SkController implements InitializingBean {
 
     private static final String TOPIC = "SECKILL";
     private static final String PRODUCT_PREFIX = "product:";
-    private static final String ORDER_LIST_POSTFIX = ":users";
+    private static final String ORDER_LIST_POSTFIX = ":uId:";
     private static final Logger LOGGER = LoggerFactory.getLogger(SkController.class);
 
     @Autowired
@@ -43,57 +41,38 @@ public class SkController implements InitializingBean {
 
     /***
      * 秒杀接口
-     * @param username
-     * @param productId
-     * @return
      */
     @PostMapping("/seckill")
-    public BaseResponse secKill(String username, String productId) {
+    public CommonReponse secKill(String username, String productId) {
         if (!rateLimiter.tryAcquire()) {
             LOGGER.info("{}被限流了", username);
-            return BaseResponse.PRODUCT_NO_STOCK;
+            return CommonReponse.PRODUCT_NO_STOCK;
         }
         LOGGER.info("{}进来了", username);
-        // 前置校验
+
+        // TODO：前置校验
         // 1. 订单参数校验
-        // TODO
 
         // 2. 商品信息校验
-        if (redisService.get(PRODUCT_PREFIX + productId) == null) {
+        String stock = redisService.get(PRODUCT_PREFIX + productId);
+        if (stock == null) {
             LOGGER.info("此商品不在秒杀活动中");
-            return BaseResponse.PRODUCT_NOT_EXIST;
+            return CommonReponse.PRODUCT_NOT_EXIST;
         }
 
-        if (Integer.valueOf(redisService.get(PRODUCT_PREFIX + productId)) <= 0) {
+        if (Integer.valueOf(stock) <= 0) {
             LOGGER.info("该商品已被秒杀完");
-            return BaseResponse.PRODUCT_NO_STOCK;
+            return CommonReponse.PRODUCT_NO_STOCK;
         }
 
         // 3. 判断是否有重复秒杀
-        String orderListKey = PRODUCT_PREFIX + productId + ORDER_LIST_POSTFIX;
-        if (redisService.hasKey(orderListKey))
-            if (redisService.findInList(orderListKey, username))
-                return BaseResponse.USER_REPEAT_SCKILL;
+        String pUKey = PRODUCT_PREFIX + productId + ORDER_LIST_POSTFIX + username;
+        if (redisService.hasKey(pUKey))
+            return CommonReponse.USER_REPEAT_SCKILL;
 
-        StringBuffer sb = new StringBuffer(productId);
-        sb.append(","+username);
+        String messageBody = productId + "," + username;
         //  组装Message消息体
-        Message message = new Message(TOPIC, productId, sb.toString().getBytes());
-        //  同步消息
-//        try {
-//            SendResult send = producer.send(message);
-//            // 判断 SendStatus
-//            if (send == null) {
-//                return BaseResponse.SCKILL_FAILURE;
-//            }
-//            if (send.getSendStatus() != SendStatus.SEND_OK) {
-//                return BaseResponse.SCKILL_FAILURE;
-//            }
-//            LOGGER.info(send.getMsgId());
-//            return BaseResponse.SCKILL_IN_QUEUE;
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        }
+        Message message = new Message(TOPIC, productId, messageBody.getBytes());
         //  异步消息
         try {
             producer.send(message, new SendCallback() {
@@ -107,28 +86,24 @@ public class SkController implements InitializingBean {
                     LOGGER.info("来自{}的请求超时", username);
                 }
             }, 2000);
-            return BaseResponse.SCKILL_IN_QUEUE;
+            return CommonReponse.SCKILL_IN_QUEUE;
         } catch (Exception e) {
             e.printStackTrace();
         }
 
-        return BaseResponse.SCKILL_FAILURE;
+        return CommonReponse.SCKILL_FAILURE;
     }
 
     /***
      * 轮询接口，供前端轮询判断当前用户是否秒杀成功
-     * @param username 用户id
-     * @param productId 商品id
-     * @return
      */
     @GetMapping("/seckillPolling")
-    public BaseResponse seckillPolling(String username, String productId) {
-        String key = PRODUCT_PREFIX + productId + ORDER_LIST_POSTFIX;
-
-        if (redisService.findInList(key, username))
-            return BaseResponse.SCKILL_SUCCESS;
+    public CommonReponse seckillPolling(String username, String productId) {
+        String pUKey = PRODUCT_PREFIX + productId + ORDER_LIST_POSTFIX + username;
+        if (redisService.hasKey(pUKey))
+            return CommonReponse.SCKILL_SUCCESS;
         else
-            return BaseResponse.SCKILL_FAILURE;
+            return CommonReponse.SCKILL_FAILURE;
     }
 
     @Override

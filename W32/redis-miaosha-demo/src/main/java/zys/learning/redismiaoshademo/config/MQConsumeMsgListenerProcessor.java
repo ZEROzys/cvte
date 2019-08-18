@@ -1,6 +1,8 @@
 package zys.learning.redismiaoshademo.config;
 
-import org.apache.rocketmq.client.consumer.listener.*;
+import org.apache.rocketmq.client.consumer.listener.ConsumeConcurrentlyContext;
+import org.apache.rocketmq.client.consumer.listener.ConsumeConcurrentlyStatus;
+import org.apache.rocketmq.client.consumer.listener.MessageListenerConcurrently;
 import org.apache.rocketmq.common.message.MessageExt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,7 +13,6 @@ import zys.learning.redismiaoshademo.pojo.Order;
 import zys.learning.redismiaoshademo.service.ProductService;
 import zys.learning.redismiaoshademo.service.RedisService;
 import zys.learning.redismiaoshademo.service.WebSocketServer;
-
 import java.util.List;
 
 @Component

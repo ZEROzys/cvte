@@ -1,7 +1,5 @@
 package zys.learning.redismiaoshademo.service;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.redis.core.ListOperations;
@@ -14,16 +12,12 @@ import org.springframework.transaction.annotation.Transactional;
 import zys.learning.redismiaoshademo.common.RedisFix;
 import zys.learning.redismiaoshademo.pojo.Order;
 import zys.learning.redismiaoshademo.pojo.Product;
-
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
 @Service
 public class RedisService {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(RedisService.class);
-
     private StringRedisTemplate redisTemplate;
     private OrderService orderService;
     private ProductService productService;
@@ -38,9 +32,6 @@ public class RedisService {
 
     /***
      * redis 秒杀功能
-     * @param productId
-     * @param username
-     * @return
      */
     public boolean secKill(String productId, String username) {
         DefaultRedisScript<String> redisScript = new DefaultRedisScript<>();
@@ -63,8 +54,6 @@ public class RedisService {
 
     /***
      * 数据库保存订单失败，redis进行回滚操作，product库存量加1，删除对应list中的用户
-     * @param productId
-     * @param username
      */
     public void rollback(String productId, String username) {
         DefaultRedisScript<String> redisScript = new DefaultRedisScript<>();
@@ -76,26 +65,20 @@ public class RedisService {
     @Transactional(rollbackFor = Exception.class)
     public void transData2Db() throws Exception{
         for (String key: getAllKeys()) {
-            if (key.endsWith(RedisFix.PRODUCT_USERS_SUFFIX)) {
-                List<String> users = getListByKey(key);
+            if (key.startsWith(RedisFix.PRODUCT_PREFIX)) {
                 String[] strings = key.split(":");
-                for (String s: users) {
-                    Order order = new Order(Long.valueOf(strings[1]), Long.valueOf(s));
+                if (strings.length == 2) {
+                    int stock = Integer.valueOf(getVal(key));
+                    Product p = productService.getProductById(Long.valueOf(strings[1]));
+                    p.setStock(stock);
+                    if (productService.save(p) == null)
+                        throw new Exception("更新库存失败");
+                } else {
+                    Order order = new Order(Long.valueOf(strings[1]), Long.valueOf(strings[3]));
                     if (orderService.save(order) == null) {
                         throw new Exception("保存订单错误");
                     }
                 }
-                if (!delKey(key))
-                    throw new Exception("删除键值出现错误");
-            }
-            if (key.startsWith(RedisFix.PRODUCT_PREFIX)
-                    && !key.endsWith(RedisFix.PRODUCT_USERS_SUFFIX)) {
-                int stock = Integer.valueOf(getVal(key));
-                String[] strings = key.split(":");
-                Product p = productService.getProductById(Long.valueOf(strings[1]));
-                p.setStock(stock);
-                if (productService.save(p) == null)
-                    throw new Exception("更新库存失败");
                 if (!delKey(key))
                     throw new Exception("删除键值出现错误");
             }

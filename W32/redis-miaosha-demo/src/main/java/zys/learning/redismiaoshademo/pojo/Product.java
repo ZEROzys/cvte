@@ -10,11 +10,11 @@ public class Product {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
     @Column(name = "stock")
-    int stock;
+    private int stock;
     @Column(name = "product_name")
-    String productName;
+    private String productName;
     @Column(name = "price")
-    Double price;
+    private Double price;
 
     public Product() {
     }

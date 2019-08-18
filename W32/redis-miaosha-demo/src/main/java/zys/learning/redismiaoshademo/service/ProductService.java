@@ -6,7 +6,6 @@ import org.springframework.transaction.annotation.Transactional;
 import zys.learning.redismiaoshademo.dao.ProductRepository;
 import zys.learning.redismiaoshademo.pojo.Order;
 import zys.learning.redismiaoshademo.pojo.Product;
-
 import java.util.List;
 
 @Service
@@ -20,9 +19,6 @@ public class ProductService {
 
     /***
      * 保存订单，库存减一，出现错误回滚
-     * @param order
-     * @return
-     * @throws Exception
      */
     @Transactional(rollbackFor = Exception.class)
     public boolean save(Order order) throws Exception{

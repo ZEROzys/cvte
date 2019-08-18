@@ -8,10 +8,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.context.annotation.Bean;
 
-
 @SpringBootConfiguration
 public class MQProducerConfiguration {
-    public static final Logger LOGGER = LoggerFactory.getLogger(MQProducerConfiguration.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MQProducerConfiguration.class);
     /**
      * 发送同一类消息的设置为同一个group，保证唯一,默认不需要设置，rocketmq会使用ip@pid(pid代表jvm名字)作为唯一标示
      */
@@ -57,11 +56,11 @@ public class MQProducerConfiguration {
         try {
             producer.start();
 
-            LOGGER.info(String.format("producer is start ! groupName:[%s],namesrvAddr:[%s]"
-                    , this.groupName, this.namesrvAddr));
+            LOGGER.info("producer is start ! groupName:{},namesrvAddr:{}"
+                    , this.groupName, this.namesrvAddr);
         } catch (MQClientException e) {
-            LOGGER.error(String.format("producer is error {}"
-                    , e.getMessage(),e));
+            LOGGER.error("producer is error {}"
+                    , e.getMessage());
         }
         return producer;
     }
